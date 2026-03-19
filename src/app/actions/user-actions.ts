@@ -2,7 +2,7 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import * as argon2 from "argon2";
+import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { Role } from "@/generated/client";
 
@@ -57,7 +57,7 @@ export async function createUser(data: any) {
 
     // Default password 'Creser1' as per requirements
     const defaultPassword = "Creser1";
-    const hashedPass = await argon2.hash(defaultPassword);
+    const hashedPass = await bcrypt.hash(defaultPassword, 10);
 
     const user = await prisma.user.create({
       data: {
@@ -120,7 +120,7 @@ export async function deleteUser(id: string) {
 
 export async function resetPassword(id: string) {
     try {
-        const hashedPass = await argon2.hash('Creser1');
+        const hashedPass = await bcrypt.hash('Creser1', 10);
         await prisma.user.update({
             where: { id },
             data: { 
