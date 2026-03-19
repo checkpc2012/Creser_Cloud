@@ -2,7 +2,7 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import * as argon2 from "argon2";
+import bcrypt from "bcryptjs";
 import { login, logout, getSession, updateSessionData } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
@@ -64,19 +64,12 @@ export async function authenticate(state: { error: string } | undefined, payload
     return { error: "Cuenta bloqueada por múltiples intentos fallidos. Contacte a SYSTEMS." };
   }
 
-  // Handle migration from bcrypt (legacy) to argon2
+  // Use bcryptjs for all verification in Cloud Demo
   let isPassValid = false;
-  const isBcrypt = user.passwordHash.startsWith("$2");
-
-  if (isBcrypt) {
-    const bcrypt = await import("bcryptjs");
+  try {
     isPassValid = await bcrypt.compare(contrasena, user.passwordHash);
-  } else {
-    try {
-      isPassValid = await argon2.verify(user.passwordHash, contrasena);
-    } catch (e) {
-      isPassValid = false;
-    }
+  } catch (e) {
+    isPassValid = false;
   }
 
   if (!isPassValid) {
@@ -98,12 +91,11 @@ export async function authenticate(state: { error: string } | undefined, payload
   }
 
   // Reset failed attempts on success
-  if (user.failedAttempts > 0 || isBcrypt) {
-    const data: any = { failedAttempts: 0 };
-    if (isBcrypt) {
-      data.passwordHash = await argon2.hash(contrasena);
-    }
-    await prisma.user.update({ where: { id: user.id }, data });
+  if (user.failedAttempts > 0) {
+    await prisma.user.update({ 
+      where: { id: user.id }, 
+      data: { failedAttempts: 0 } 
+    });
   }
 
   // Check for temporary coverage
@@ -163,15 +155,7 @@ export async function changePasswordAction(state: any, formData: FormData) {
   });
   if (!user) return { error: "Usuario no encontrado." };
 
-  const isBcrypt = user.passwordHash.startsWith("$2");
-  let isMatch = false;
-
-  if (isBcrypt) {
-    const bcrypt = await import("bcryptjs");
-    isMatch = await bcrypt.compare(currentPass, user.passwordHash);
-  } else {
-    isMatch = await argon2.verify(user.passwordHash, currentPass);
-  }
+  const isMatch = await bcrypt.compare(currentPass, user.passwordHash);
 
   if (!isMatch) return { error: "La contraseña actual es incorrecta." };
 
@@ -187,7 +171,7 @@ export async function changePasswordAction(state: any, formData: FormData) {
     return { error: "La nueva contraseña debe tener al menos 8 caracteres y 1 letra Mayúscula." };
   }
 
-  const hashed = await argon2.hash(newPass);
+  const hashed = await bcrypt.hash(newPass, 10);
   const updatedUser = await prisma.user.update({
     where: { id: user.id },
     data: {
