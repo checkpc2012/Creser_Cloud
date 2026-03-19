@@ -4,7 +4,7 @@
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
-import { Role } from "@/generated/client";
+import { Role } from "@prisma/client";
 
 export async function getUsers() {
   try {
