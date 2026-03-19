@@ -1,0 +1,629 @@
+generator client {
+  provider        = "prisma-client-js"
+  output          = "../src/generated/client"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  schemas   = ["audit", "auth", "domain", "staging"]
+}
+
+model User {
+  id                 String                 @id @default(cuid())
+  username           String                 @unique
+  passwordHash       String
+  firstName          String
+  lastName           String
+  role               Role                   @default(AGENT)
+  mustChangePassword Boolean                @default(true)
+  isActive           Boolean                @default(true)
+  failedAttempts     Int                    @default(0)
+  isBlocked          Boolean                @default(false)
+  branchId           String?
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  mfaEnabled         Boolean                @default(false)
+  mfaSecret          String?
+  coverages          BranchCoverage[]       @relation("UserCoverages")
+  branch             Branch?                @relation(fields: [branchId], references: [id])
+  auditActions       BranchOperationAudit[]
+  securityEvents     SecurityEvent[]
+  nombreCompleto     String?
+
+  @@schema("auth")
+}
+
+model Branch {
+  id              String                 @id @default(cuid())
+  name            String                 @unique
+  code            String                 @unique
+  isAnnext        Boolean                @default(false)
+  parentBranchId  String?
+  targetCoverages BranchCoverage[]       @relation("BranchTarget")
+  users           User[]
+  operatingAudits BranchOperationAudit[] @relation("operatingBranch")
+  originAudits    BranchOperationAudit[] @relation("originBranch")
+  parent          Branch?                @relation("BranchHierarchy", fields: [parentBranchId], references: [id])
+  children        Branch[]               @relation("BranchHierarchy")
+  clients         Client[]
+  loans           Loan[]
+
+  @@schema("domain")
+}
+
+model BranchCoverage {
+  id        String   @id @default(cuid())
+  userId    String
+  branchId  String
+  dateFrom  DateTime
+  dateTo    DateTime
+  reason    String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  branch    Branch   @relation("BranchTarget", fields: [branchId], references: [id])
+  user      User     @relation("UserCoverages", fields: [userId], references: [id])
+
+  @@schema("auth")
+}
+
+model Staging_FSH020 {
+  id            String   @id @default(cuid())
+  hSolOper      String?
+  hSolNro       String?
+  hSolCntCuo    String?
+  hSolImpCT     String?
+  rawPayload    Json
+  importBatchId String
+  importedAt    DateTime @default(now())
+
+  @@schema("staging")
+}
+
+model Staging_FSD011 {
+  id            String   @id @default(cuid())
+  scOper        String?
+  scSbop        String?
+  scFvto        String?
+  scSdo         String?
+  rawPayload    Json
+  importBatchId String
+  importedAt    DateTime @default(now())
+
+  @@schema("staging")
+}
+
+model Staging_FSH016 {
+  id            String   @id @default(cuid())
+  hhOper        String?
+  hhSbop        String?
+  hhFcon        String?
+  hhFvto        String?
+  hhCta         String?
+  hhRubro       String?
+  hhImp1        String?
+  hhImp2        String?
+  rawPayload    Json
+  importBatchId String
+  importedAt    DateTime @default(now())
+
+  @@schema("staging")
+}
+
+model Staging_CFE {
+  id            String   @id @default(cuid())
+  serie         String?
+  nroFac        String?
+  fecha         String?
+  docR          String?
+  nombreR       String?
+  montoTot      String?
+  rawPayload    Json
+  importBatchId String
+  importedAt    DateTime @default(now())
+
+  @@schema("staging")
+}
+
+model Staging_FSR011 {
+  id            String   @id @default(cuid())
+  resCta        String?
+  resOper       String?
+  rawPayload    Json
+  importBatchId String
+  importedAt    DateTime @default(now())
+
+  @@schema("staging")
+}
+
+model Staging_FSH011 {
+  id            String   @id @default(cuid())
+  hcCta         String?
+  hcOper        String?
+  hcSbop        String?
+  rawPayload    Json
+  importBatchId String
+  importedAt    DateTime @default(now())
+
+  @@schema("staging")
+}
+
+model Staging_FSD001 {
+  id            String   @id @default(cuid())
+  ctnro         String?
+  documento     String?
+  rawPayload    Json
+  importBatchId String
+  importedAt    DateTime @default(now())
+
+  @@schema("staging")
+}
+
+model Staging_FSD100 {
+  id            String   @id @default(cuid())
+  lisCta        String?
+  lisOper       String?
+  rawPayload    Json
+  importBatchId String
+  importedAt    DateTime @default(now())
+
+  @@schema("staging")
+}
+
+model Staging_FSD004 {
+  id            String   @id @default(cuid())
+  empCod        String?
+  empNom        String?
+  rawPayload    Json
+  importBatchId String
+  importedAt    DateTime @default(now())
+
+  @@schema("staging")
+}
+
+model Client {
+  id                    String    @id @default(cuid())
+  documentType          String    @default("CI")
+  documentNumber        String    @unique
+  fullName              String
+  email                 String?
+  phone                 String?
+  address               String?
+  gender                String?
+  maritalStatus         String?
+  birthDate             DateTime?
+  registrationDate      DateTime?
+  nationality           String?
+  housingType           String?
+  workplaceName         String?
+  jobTitle              String?
+  employmentDescription String?
+  alternatePhone        String?
+  spouseDocument        String?
+  remarkCategory        String?
+  isLegacy              Boolean   @default(false)
+  legacyId              String?   @unique
+  branchId              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  employerId String?
+  employer   Employer? @relation(fields: [employerId], references: [id])
+
+  branch   Branch?   @relation(fields: [branchId], references: [id])
+  invoices Invoice[]
+  loans    Loan[]
+
+  @@schema("domain")
+}
+
+model Employer {
+  id           String       @id @default(cuid())
+  employerCode String       @unique
+  employerName String
+  type         EmployerType @default(OTHER_LEGACY_WORK_REFERENCE)
+
+  // Legacy fields (from FSD004)
+  legacyAddress              String?
+  legacyPhone                String?
+  legacyContact              String?
+  retentionFlag              Boolean @default(false)
+  closeDay                   Int?
+  collectionDay              Int?
+  correctionDaysFlag         Boolean @default(false)
+  lateFeeFlag                Boolean @default(false)
+  retentionAuthorizationFlag Boolean @default(false)
+
+  // Researched fields (Public Data)
+  publicPhone    String?
+  publicMobile   String?
+  whatsapp       String?
+  publicEmail    String?
+  website        String?
+  facebookUrl    String?
+  instagramUrl   String?
+  notes          String?
+  researchStatus String    @default("PENDING")
+  verifiedAt     DateTime?
+  sourceNotes    String?
+
+  clients   Client[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  isLegacy  Boolean  @default(true)
+
+  @@schema("domain")
+}
+
+model Loan {
+  id                 String            @id @default(cuid())
+  clientId           String
+  operationNumber    String            @unique
+  principalAmount    Decimal           @db.Decimal(18, 2)
+  interestAmount     Decimal           @db.Decimal(18, 2)
+  taxAmount          Decimal           @db.Decimal(18, 2)
+  arrearsAmount      Decimal           @default(0) @db.Decimal(18, 2)
+  totalAmount        Decimal           @db.Decimal(18, 2)
+  outstandingBalance Decimal           @db.Decimal(18, 2)
+  termCount          Int
+  status             OperationalStatus @default(ACTIVE)
+  isLegacy           Boolean           @default(false)
+  branchId           String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  refinancedFromId   String?           @unique
+  refinanceReason    String?
+  refinanceCreatedBy String?
+  installments       Installment[]
+  invoices           Invoice[]
+  branch             Branch?           @relation(fields: [branchId], references: [id])
+  client             Client            @relation(fields: [clientId], references: [id])
+  refinancedFrom     Loan?             @relation("RefinanceRelation", fields: [refinancedFromId], references: [id])
+  refinancedTo       Loan?             @relation("RefinanceRelation")
+  payments           Payment[]
+  promotionId        String?
+  promotion          Promotion?        @relation(fields: [promotionId], references: [id])
+
+  @@schema("domain")
+}
+
+model Installment {
+  id              String              @id @default(cuid())
+  loanId          String
+  number          Int
+  dueDate         DateTime
+  principalAmount Decimal             @db.Decimal(18, 2)
+  interestAmount  Decimal             @db.Decimal(18, 2)
+  taxAmount       Decimal             @db.Decimal(18, 2)
+  arrearsAmount   Decimal             @default(0) @db.Decimal(18, 2)
+  totalAmount     Decimal             @db.Decimal(18, 2)
+  balanceAmount   Decimal             @db.Decimal(18, 2)
+  isPaid          Boolean             @default(false)
+  loan            Loan                @relation(fields: [loanId], references: [id])
+  invoices        Invoice[]
+  payments        Payment[]
+  allocations     PaymentAllocation[]
+
+  @@schema("domain")
+}
+
+model Payment {
+  id                 String              @id @default(cuid())
+  loanId             String
+  paymentDate        DateTime            @default(now())
+  principalComponent Decimal             @db.Decimal(18, 2)
+  interestComponent  Decimal             @db.Decimal(18, 2)
+  taxComponent       Decimal             @db.Decimal(18, 2)
+  arrearsComponent   Decimal             @default(0) @db.Decimal(18, 2)
+  totalAmount        Decimal             @db.Decimal(18, 2)
+  method             String?
+  reference          String?
+  isLegacy           Boolean             @default(false)
+  installmentId      String?
+  invoices           Invoice[]
+  installment        Installment?        @relation(fields: [installmentId], references: [id])
+  loan               Loan                @relation(fields: [loanId], references: [id])
+  allocations        PaymentAllocation[]
+
+  @@schema("domain")
+}
+
+model CompanyFiscal {
+  id              String            @id @default(cuid())
+  rut             String
+  razonSocial     String
+  nombreComercial String?
+  direccion       String
+  ciudad          String?
+  telefono        String?
+  email           String?
+  sucursal        String?
+  establecimiento String?
+  seriePorDefecto String            @default("A")
+  ambiente        String            @default("SIMULACION")
+  updatedAt       DateTime          @updatedAt
+  createdAt       DateTime          @default(now())
+  invoices        Invoice[]
+  sequences       InvoiceSequence[]
+
+  @@schema("domain")
+}
+
+model Invoice {
+  id                  String          @id @default(cuid())
+  serie               String
+  numero              Int
+  numeroFormateado    String          @unique
+  tipoDocumento       String          @default("E_TICKET")
+  fecha               DateTime        @default(now())
+  moneda              String          @default("UYU")
+  subTotalGravado     Decimal         @db.Decimal(18, 2)
+  subTotalNoGravado   Decimal         @db.Decimal(18, 2)
+  totalIvaBasica      Decimal         @db.Decimal(18, 2)
+  totalIvaMinima      Decimal         @db.Decimal(18, 2)
+  totalIva            Decimal         @db.Decimal(18, 2)
+  total               Decimal         @db.Decimal(18, 2)
+  cae                 String?
+  codigoSeguridad     String?
+  fechaVencimientoCae DateTime?
+  estadoDgi           String          @default("PENDIENTE")
+  estado              String          @default("EMITIDA")
+  xmlGenerado         String?
+  respuestaDgi        Json?
+  notas               String?
+  companyId           String
+  clientId            String
+  paymentId           String?
+  loanId              String?
+  installmentId       String?
+  updatedAt           DateTime        @updatedAt
+  createdAt           DateTime        @default(now())
+  client              Client          @relation(fields: [clientId], references: [id])
+  company             CompanyFiscal   @relation(fields: [companyId], references: [id])
+  installment         Installment?    @relation(fields: [installmentId], references: [id])
+  loan                Loan?           @relation(fields: [loanId], references: [id])
+  payment             Payment?        @relation(fields: [paymentId], references: [id])
+  details             InvoiceDetail[]
+
+  @@schema("domain")
+}
+
+model InvoiceDetail {
+  id         String  @id @default(cuid())
+  invoiceId  String
+  concepto   String
+  cantidad   Float   @default(1)
+  precioUnit Decimal @db.Decimal(18, 2)
+  importe    Decimal @db.Decimal(18, 2)
+  ivaRate    Int     @default(22)
+  ivaImporte Decimal @db.Decimal(18, 2)
+  orden      Int     @default(1)
+  invoice    Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@schema("domain")
+}
+
+model InvoiceSequence {
+  id            String        @id @default(cuid())
+  companyId     String
+  serie         String
+  tipoDocumento String
+  ultimoNumero  Int           @default(0)
+  company       CompanyFiscal @relation(fields: [companyId], references: [id])
+
+  @@unique([companyId, serie, tipoDocumento])
+  @@schema("domain")
+}
+
+model PaymentAllocation {
+  id            String      @id @default(cuid())
+  paymentId     String
+  installmentId String
+  capital       Decimal     @db.Decimal(18, 2)
+  interest      Decimal     @db.Decimal(18, 2)
+  mora          Decimal     @db.Decimal(18, 2)
+  ivaMora       Decimal     @db.Decimal(18, 2)
+  amount        Decimal     @db.Decimal(18, 2)
+  installment   Installment @relation(fields: [installmentId], references: [id], onDelete: Cascade)
+  payment       Payment     @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@schema("domain")
+}
+
+model HistoricalEvent {
+  id                String    @id @default(cuid())
+  eventType         EventType
+  eventDate         DateTime
+  clientDocument    String
+  legacyOperation   String?
+  installmentNumber Int?
+  paymentDate       DateTime?
+  dueDate           DateTime?
+  receiptSeries     String?
+  receiptNumber     String?
+  principalAmount   Decimal   @db.Decimal(18, 2)
+  interestAmount    Decimal   @db.Decimal(18, 2)
+  taxAmount         Decimal   @db.Decimal(18, 2)
+  arrearsAmount     Decimal   @default(0) @db.Decimal(18, 2)
+  totalAmount       Decimal   @db.Decimal(18, 2)
+  sourceTable       String?
+  rawPayload        Json
+  createdAt         DateTime  @default(now())
+
+  @@index([clientDocument])
+  @@index([legacyOperation])
+  @@index([paymentDate])
+  @@index([eventType])
+  @@schema("audit")
+}
+
+model BranchOperationAudit {
+  id                String   @id @default(cuid())
+  type              String
+  loanId            String?
+  clientId          String?
+  originBranchId    String
+  operatingBranchId String
+  operatorUserId    String
+  authorizerUserId  String?
+  authorizationType String?
+  amount            Decimal? @db.Decimal(18, 2)
+  reason            String?
+  isAuthorized      Boolean  @default(false)
+  metadata          Json?
+  createdAt         DateTime @default(now())
+  operatingBranch   Branch   @relation("operatingBranch", fields: [operatingBranchId], references: [id])
+  operator          User     @relation(fields: [operatorUserId], references: [id])
+  originBranch      Branch   @relation("originBranch", fields: [originBranchId], references: [id])
+
+  @@schema("audit")
+}
+
+enum Role {
+  OWNER
+  MANAGER
+  ACCOUNTANT
+  AGENT_SENIOR
+  AGENT
+  SYSTEMS
+
+  @@schema("auth")
+}
+
+enum OperationalStatus {
+  ACTIVE
+  IN_ARREARS
+  CLOSED
+  REFINANCED
+
+  @@schema("domain")
+}
+
+enum EventType {
+  CUSTOMER_RECEIPT
+  LOAN_ORIGINATION_NOTE
+  ACCOUNTING_ENTRY
+  CARD_VOUCHER
+  VOID_ENTRY
+
+  @@schema("audit")
+}
+
+enum EmployerType {
+  PUBLIC_INSTITUTION
+  PRIVATE_COMPANY
+  SELF_EMPLOYED
+  INFORMAL_ACTIVITY
+  RETIRED_OR_PENSION
+  HOUSEHOLD_OR_PARTICULAR
+  OTHER_LEGACY_WORK_REFERENCE
+
+  @@schema("domain")
+}
+
+model SystemLog {
+  id          String   @id @default(cuid())
+  accion      String
+  tabla       String
+  registroId  String?
+  descripcion String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@schema("audit")
+}
+
+model LegacyMemo {
+  id        String   @id @default(cuid())
+  clientId  String   @unique
+  memo      String
+  legacyId  String?  @map("legacy_id")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@schema("domain")
+}
+
+model Promotion {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  description String
+  type        String
+  discount    Decimal  @db.Decimal(18, 2)
+  status      String   @default("ACTIVE")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  loans       Loan[]
+
+  @@schema("domain")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  actorRole  String
+  action     String
+  entityType String
+  entityId   String?
+  beforeJson Json?
+  afterJson  Json?
+  ip         String?
+  userAgent  String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@schema("audit")
+}
+
+model SecurityEvent {
+  id          String   @id @default(cuid())
+  userId      String?
+  type        String
+  severity    String   @default("LOW")
+  description String?
+  metadata    Json?
+  ip          String?
+  createdAt   DateTime @default(now())
+  user        User?    @relation(fields: [userId], references: [id])
+
+  @@schema("audit")
+}
+
+model ApprovalRequest {
+  id            String           @id @default(cuid())
+  type          String
+  status        String           @default("PENDING")
+  data          Json
+  requestedById String
+  processedById String?
+  processedAt   DateTime?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  action        ApprovalAction[]
+
+  @@schema("audit")
+}
+
+model ApprovalAction {
+  id            String          @id @default(cuid())
+  requestId     String
+  action        String
+  comment       String?
+  performedById String
+  createdAt     DateTime        @default(now())
+  request       ApprovalRequest @relation(fields: [requestId], references: [id])
+
+  @@schema("audit")
+}
+
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  username  String
+  ip        String
+  success   Boolean
+  createdAt DateTime @default(now())
+
+  @@schema("audit")
+}
