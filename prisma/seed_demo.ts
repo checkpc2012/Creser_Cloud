@@ -1,4 +1,4 @@
-import { PrismaClient, Role, OperationalStatus, EmployerType } from "../src/generated/client";
+import { PrismaClient, Role, OperationalStatus, EmployerType } from "@prisma/client";
 // import * as argon2 from "argon2";
 
 const prisma = new PrismaClient();
