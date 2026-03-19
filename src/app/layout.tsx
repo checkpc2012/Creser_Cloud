@@ -21,6 +21,8 @@ export const metadata: Metadata = {
   description: "Gestión eficiente de préstamos y cobranzas",
 };
 
+export const dynamic = 'force-dynamic';
+
 export default function RootLayout({
   children,
 }: Readonly<{
