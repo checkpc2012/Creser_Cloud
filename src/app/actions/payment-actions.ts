@@ -372,7 +372,7 @@ export async function processPayment(data: {
                   originBranchId: originBranchId,
                   operatingBranchId: activeBranchId || "GLOBAL",
                   operatorUserId: userId,
-                  authorizerUserId: data.authorizedBy || userId, // In case of MANAGER bypass
+                  authorizerUserId: data.authorizedBy || userId, // Manager-level cross-branch authorization
                   authorizationType: isGlobal ? 'MANAGER' : 'AGENT_SENIOR',
                   amount: data.amount,
                   reason: `Pago de $${data.amount} para préstamo ${currentInstallment.loanId} (Sucursal Origen: ${originBranchId})`,

@@ -142,6 +142,29 @@
   font-weight: 400;
 }
 
+
+/* ── Viewport Fit & Scroll Minimization (Phase 7) ────── */
+@layer utilities {
+  .fit-viewport {
+    height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .scroll-content {
+    flex: 1;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+
+  /* Prevent double scrollbars on modals */
+  [data-radix-scroll-lock] {
+    overflow: hidden !important;
+  }
+}
+
 .field-base:disabled {
   opacity: 0.5;
   cursor: not-allowed;

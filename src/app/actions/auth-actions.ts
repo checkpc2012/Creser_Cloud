@@ -1,4 +1,10 @@
 
+/**
+ * AUTHENTICATION ACTIONS - CLOUD PRODUCTION VERSION
+ * SECURITY POLICY: NO BYPASS ALLOWED. 
+ * ALL LOGINS MUST VALIDATE CREDENTIALS VIA BCRYPT.
+ */
+
 "use server";
 
 import prisma from "@/lib/prisma";
@@ -10,38 +16,6 @@ import { headers } from "next/headers";
 export async function authenticate(state: { error: string } | undefined, payload: FormData) {
   const usuario = (payload.get("usuario") as string)?.trim().toLowerCase();
   const contrasena = payload.get("password") as string;
-
-  // BYPASS LOCAL LOGIN (Solo en desarrollo)
-  const isDevelopment = process.env.NODE_ENV !== "production";
-  const canBypassFlag = process.env.TESTING_BYPASS_LOGIN === "true";
-  const bypassTarget = process.env.TESTING_BYPASS_USER || "admin_local";
-
-  if (isDevelopment && canBypassFlag) {
-    const bypassUser = await prisma.user.findUnique({
-      where: { username: bypassTarget },
-      include: { branch: true }
-    });
-
-    if (bypassUser) {
-      const mustChangeBypass = process.env.TESTING_BYPASS_FORCE_PASSWORD_CHANGE === "true";
-      
-      const sessionData = {
-        id: bypassUser.id,
-        nombre: `${bypassUser.firstName} ${bypassUser.lastName}`,
-        usuario: bypassUser.username,
-        rol: bypassUser.role,
-        assignedBranchId: bypassUser.branchId,
-        assignedBranchName: bypassUser.branch?.name || 'Global',
-        activeBranchId: bypassUser.branchId,
-        activeBranchName: bypassUser.branch?.name || 'Global',
-        isTemporaryCoverage: false,
-        mustChange: mustChangeBypass ? false : bypassUser.mustChangePassword
-      };
-
-      await login(sessionData);
-      redirect("/dashboard");
-    }
-  }
 
   if (!usuario || !contrasena) {
     return { error: "Usuario y contraseña son requeridos." };
@@ -242,4 +216,4 @@ export async function setActiveBranchAction(branchId: string) {
   return { success: true };
 }
 
-// Eliminar bypassLoginAction por seguridad
+

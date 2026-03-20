@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { PrismaClient } = require("../src/generated/client");
+const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient({
   log: ['query', 'info', 'warn', 'error'],
@@ -24,7 +24,10 @@ async function main() {
   const branch = await prisma.branch.findFirst({ where: { code: "DN01" } });
 
   // 2. Demo User
-  const hashedPassword = "DUMMY_HASHED_PASSWORD";
+  const bcrypt = require("bcryptjs");
+  const demoPassword = process.env.DEMO_USER_PASSWORD || 'DemoCreser2025!';
+  const hashedPassword = await bcrypt.hash(demoPassword, 10);
+  
   await prisma.user.upsert({
     where: { username: "demouser" },
     update: { passwordHash: hashedPassword },

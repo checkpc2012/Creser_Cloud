@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import { authenticate } from "@/app/actions/auth-actions";
 import { 
   ShieldCheck, 
@@ -17,7 +17,32 @@ import { Button } from "@/components/ui/button";
 export default function LoginPage() {
   const [state, formAction, isPending] = useActionState(authenticate, undefined);
 
+  // Use a proper ref
+  const actualFormRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    if (state?.error && actualFormRef.current) {
+      // Aggressive reset for both uncontrolled and browser-native states
+      actualFormRef.current.reset();
+      const inputs = actualFormRef.current.querySelectorAll('input');
+      inputs.forEach(input => {
+        input.value = '';
+        input.blur();
+      });
+    }
+  }, [state]);
+
+  // Ensure clean state on mount (covers logout/redirect scenarios)
+  useEffect(() => {
+    if (actualFormRef.current) {
+      actualFormRef.current.reset();
+    }
+  }, []);
+
+
   return (
+
+
     <div className="min-h-screen grid lg:grid-cols-2 bg-slate-50 dark:bg-slate-950 font-sans selection:bg-emerald-950/20 dark:bg-emerald-950/300/30">
       
       {/* Left: Branding & Visuals */}
@@ -87,7 +112,7 @@ export default function LoginPage() {
             <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Ingrese sus credenciales de Staff</p>
           </div>
 
-          <form action={formAction} className="space-y-6">
+          <form ref={actualFormRef} action={formAction} className="space-y-6">
             {state?.error && (
                <div className="p-4 rounded-2xl bg-rose-900/20 dark:bg-rose-900/30 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-900/30 text-rose-600 dark:text-rose-400 text-xs font-black uppercase flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
                   <div className="p-2 bg-rose-100 dark:bg-rose-900/30 rounded-lg">
@@ -124,9 +149,11 @@ export default function LoginPage() {
                     name="password"
                     type="password"
                     required
+                    autoComplete="new-password"
                     placeholder="Contraseña"
                     className="w-full pl-12 pr-4 h-14 bg-background border-2 border-border focus:border-emerald-500 dark:focus:border-emerald-500 rounded-2xl outline-none transition-all font-bold text-sm shadow-sm text-foreground"
                    />
+
 
                 </div>
               </div>

@@ -157,6 +157,9 @@ export async function simulateLoanPlan(params: {
   startDate?: string;
   ivaRate?: number;
 }): Promise<CreditEngineResult> {
+  if (params.principalAmount <= 0) {
+    throw new Error("El monto a simular debe ser mayor a 0");
+  }
   return CreditEngine.generateInstallmentPlan({
     ...params,
     startDate: params.startDate ? new Date(params.startDate) : new Date(),

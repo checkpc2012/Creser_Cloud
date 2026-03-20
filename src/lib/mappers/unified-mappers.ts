@@ -1,7 +1,7 @@
 
 import { ClientDTO, LoanDTO, HistoricalEventDTO, InstallmentDTO, EmployerDTO } from "@/types/dtos";
 import { formatDocument, normalizeDocument, sanitizeName } from '../utils';
-import { EventType } from "@/generated/client";
+import { EventType } from "@prisma/client";
 
 /**
  * Maps a database Client (domain or virtual staging) to a unified ClientDTO.

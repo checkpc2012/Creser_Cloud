@@ -1,5 +1,5 @@
 
-import { PrismaClient } from '../src/generated/client';
+import { PrismaClient } from "@prisma/client";
 import * as argon2 from 'argon2';
 import { changePasswordAction } from '../src/app/actions/auth-actions';
 

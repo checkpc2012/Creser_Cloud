@@ -1,5 +1,4 @@
-import { PrismaClient, Role } from '../src/generated/client';
-import * as argon2 from 'argon2';
+import { PrismaClient, Role } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -8,14 +7,14 @@ export async function seedBaseInfo() {
   
   // 1. Ensure "General" branch exists
   let branch = await prisma.branch.findUnique({
-    where: { nombre: 'General' }
+    where: { name: 'General' }
   });
   
   if (!branch) {
     branch = await prisma.branch.create({
       data: {
-        nombre: 'General',
-        isActive: true
+        name: 'General',
+        code: 'GEN001'
       }
     });
     console.log('Branch "General" created.');
@@ -24,29 +23,32 @@ export async function seedBaseInfo() {
   }
 
   // 2. Ensure "lsosa" user exists
-  const usuario = 'lsosa';
+  const username = 'lsosa';
   let user = await prisma.user.findUnique({
-    where: { usuario }
+    where: { username }
   });
   
   if (!user) {
-    const hashedPassword = await argon2.hash('Creser2025!');
+    const bcrypt = await import("bcryptjs");
+    const initialPassword = process.env.INITIAL_ADMIN_PASSWORD || 'Creser2025!';
+    const hashedPassword = await bcrypt.hash(initialPassword, 10);
+    
     user = await prisma.user.create({
       data: {
-        usuario,
-        nombre: 'Luis',
-        apellido: 'Sosa',
+        username,
+        firstName: 'Luis',
+        lastName: 'Sosa',
         nombreCompleto: 'Luis Sosa',
-        contrasena: hashedPassword,
-        rol: Role.SYSTEMS,
+        passwordHash: hashedPassword,
+        role: Role.SYSTEMS,
         mustChangePassword: false,
-        status: 'ACTIVE',
+        isActive: true,
         branchId: branch.id
       }
     });
-    console.log(`User "${usuario}" created.`);
+    console.log(`User "${username}" created.`);
   } else {
-    console.log(`User "${usuario}" already exists.`);
+    console.log(`User "${username}" already exists.`);
   }
   
   return user;

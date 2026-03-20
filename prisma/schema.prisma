@@ -27,11 +27,11 @@ model User {
   updatedAt          DateTime               @updatedAt
   mfaEnabled         Boolean                @default(false)
   mfaSecret          String?
-  coverages          BranchCoverage[]       @relation("UserCoverages")
-  branch             Branch?                @relation(fields: [branchId], references: [id])
+  nombreCompleto     String?
   auditActions       BranchOperationAudit[]
   securityEvents     SecurityEvent[]
-  nombreCompleto     String?
+  coverages          BranchCoverage[]       @relation("UserCoverages")
+  branch             Branch?                @relation(fields: [branchId], references: [id])
 
   @@schema("auth")
 }
@@ -42,10 +42,10 @@ model Branch {
   code            String                 @unique
   isAnnext        Boolean                @default(false)
   parentBranchId  String?
-  targetCoverages BranchCoverage[]       @relation("BranchTarget")
-  users           User[]
   operatingAudits BranchOperationAudit[] @relation("operatingBranch")
   originAudits    BranchOperationAudit[] @relation("originBranch")
+  targetCoverages BranchCoverage[]       @relation("BranchTarget")
+  users           User[]
   parent          Branch?                @relation("BranchHierarchy", fields: [parentBranchId], references: [id])
   children        Branch[]               @relation("BranchHierarchy")
   clients         Client[]
@@ -184,12 +184,12 @@ model Staging_FSD004 {
 }
 
 model Client {
-  id             String    @id @default(cuid())
-  documentType   String    @default("CI")
-  documentNumber String    @unique
-  fullName       String
-  email          String?
-  phone          String?
+  id                    String    @id @default(cuid())
+  documentType          String    @default("CI")
+  documentNumber        String    @unique
+  fullName              String
+  email                 String?
+  phone                 String?
   address               String?
   gender                String?
   maritalStatus         String?
@@ -208,51 +208,44 @@ model Client {
   branchId              String?
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
-  
   employerId            String?
+  branch                Branch?   @relation(fields: [branchId], references: [id])
   employer              Employer? @relation(fields: [employerId], references: [id])
-  
-  branch         Branch?   @relation(fields: [branchId], references: [id])
-  invoices       Invoice[]
-  loans          Loan[]
+  invoices              Invoice[]
+  loans                 Loan[]
 
   @@schema("domain")
 }
 
 model Employer {
   id                         String       @id @default(cuid())
-  employerCode              String       @unique
-  employerName              String
-  type                      EmployerType @default(OTHER_LEGACY_WORK_REFERENCE)
-  
-  // Legacy fields (from FSD004)
-  legacyAddress             String?
-  legacyPhone               String?
-  legacyContact             String?
-  retentionFlag             Boolean      @default(false)
-  closeDay                  Int?
-  collectionDay             Int?
-  correctionDaysFlag        Boolean      @default(false)
-  lateFeeFlag               Boolean      @default(false)
+  employerCode               String       @unique
+  employerName               String
+  type                       EmployerType @default(OTHER_LEGACY_WORK_REFERENCE)
+  legacyAddress              String?
+  legacyPhone                String?
+  legacyContact              String?
+  retentionFlag              Boolean      @default(false)
+  closeDay                   Int?
+  collectionDay              Int?
+  correctionDaysFlag         Boolean      @default(false)
+  lateFeeFlag                Boolean      @default(false)
   retentionAuthorizationFlag Boolean      @default(false)
-
-  // Researched fields (Public Data)
-  publicPhone               String?
-  publicMobile              String?
-  whatsapp                  String?
-  publicEmail               String?
-  website                   String?
-  facebookUrl               String?
-  instagramUrl              String?
-  notes                     String?
-  researchStatus            String       @default("PENDING")
-  verifiedAt                DateTime?
-  sourceNotes               String?
-
-  clients                   Client[]
-  createdAt                 DateTime     @default(now())
-  updatedAt                 DateTime     @updatedAt
-  isLegacy                  Boolean      @default(true)
+  publicPhone                String?
+  publicMobile               String?
+  whatsapp                   String?
+  publicEmail                String?
+  website                    String?
+  facebookUrl                String?
+  instagramUrl               String?
+  notes                      String?
+  researchStatus             String       @default("PENDING")
+  verifiedAt                 DateTime?
+  sourceNotes                String?
+  createdAt                  DateTime     @default(now())
+  updatedAt                  DateTime     @updatedAt
+  isLegacy                   Boolean      @default(true)
+  clients                    Client[]
 
   @@schema("domain")
 }
@@ -276,15 +269,15 @@ model Loan {
   refinancedFromId   String?           @unique
   refinanceReason    String?
   refinanceCreatedBy String?
+  promotionId        String?
   installments       Installment[]
   invoices           Invoice[]
   branch             Branch?           @relation(fields: [branchId], references: [id])
   client             Client            @relation(fields: [clientId], references: [id])
+  promotion          Promotion?        @relation(fields: [promotionId], references: [id])
   refinancedFrom     Loan?             @relation("RefinanceRelation", fields: [refinancedFromId], references: [id])
   refinancedTo       Loan?             @relation("RefinanceRelation")
   payments           Payment[]
-  promotionId        String?
-  promotion          Promotion?        @relation(fields: [promotionId], references: [id])
 
   @@schema("domain")
 }
@@ -481,48 +474,6 @@ model BranchOperationAudit {
   @@schema("audit")
 }
 
-enum Role {
-  OWNER
-  MANAGER
-  ACCOUNTANT
-  AGENT_SENIOR
-  AGENT
-  SYSTEMS
-
-  @@schema("auth")
-}
-
-enum OperationalStatus {
-  ACTIVE
-  IN_ARREARS
-  CLOSED
-  REFINANCED
-
-  @@schema("domain")
-}
-
-enum EventType {
-  CUSTOMER_RECEIPT
-  LOAN_ORIGINATION_NOTE
-  ACCOUNTING_ENTRY
-  CARD_VOUCHER
-  VOID_ENTRY
-
-  @@schema("audit")
-}
-
-enum EmployerType {
-  PUBLIC_INSTITUTION
-  PRIVATE_COMPANY
-  SELF_EMPLOYED
-  INFORMAL_ACTIVITY
-  RETIRED_OR_PENSION
-  HOUSEHOLD_OR_PARTICULAR
-  OTHER_LEGACY_WORK_REFERENCE
-
-  @@schema("domain")
-}
-
 model SystemLog {
   id          String   @id @default(cuid())
   accion      String
@@ -561,18 +512,18 @@ model Promotion {
 }
 
 model AuditLog {
-  id          String   @id @default(cuid())
-  userId      String?
-  actorRole   String
-  action      String
-  entityType  String
-  entityId    String?
-  beforeJson  Json?
-  afterJson   Json?
-  ip          String?
-  userAgent   String?
-  metadata    Json?
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  userId     String?
+  actorRole  String
+  action     String
+  entityType String
+  entityId   String?
+  beforeJson Json?
+  afterJson  Json?
+  ip         String?
+  userAgent  String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
 
   @@schema("audit")
 }
@@ -626,4 +577,46 @@ model LoginAttempt {
   createdAt DateTime @default(now())
 
   @@schema("audit")
+}
+
+enum Role {
+  OWNER
+  MANAGER
+  ACCOUNTANT
+  AGENT_SENIOR
+  AGENT
+  SYSTEMS
+
+  @@schema("auth")
+}
+
+enum OperationalStatus {
+  ACTIVE
+  IN_ARREARS
+  CLOSED
+  REFINANCED
+
+  @@schema("domain")
+}
+
+enum EventType {
+  CUSTOMER_RECEIPT
+  LOAN_ORIGINATION_NOTE
+  ACCOUNTING_ENTRY
+  CARD_VOUCHER
+  VOID_ENTRY
+
+  @@schema("audit")
+}
+
+enum EmployerType {
+  PUBLIC_INSTITUTION
+  PRIVATE_COMPANY
+  SELF_EMPLOYED
+  INFORMAL_ACTIVITY
+  RETIRED_OR_PENSION
+  HOUSEHOLD_OR_PARTICULAR
+  OTHER_LEGACY_WORK_REFERENCE
+
+  @@schema("domain")
 }

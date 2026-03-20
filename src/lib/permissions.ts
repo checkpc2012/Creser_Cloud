@@ -1,4 +1,4 @@
-import { Role } from "../generated/client";
+import { Role } from "@prisma/client";
 
 export type PermissionAction =
     | "LOAN_CREATE"

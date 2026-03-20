@@ -72,10 +72,19 @@ export function RefinanceModal({ isOpen, onClose, loanId, onSuccess }: Refinance
 
   async function handleSimulate() {
     if (!summary) return;
+    const principalAmount = (summary.totalPending || 0) + (newCash || 0);
+    
+    if (principalAmount <= 0) {
+      setSimulation(null);
+      setSimulating(false);
+      return;
+    }
+
     setSimulating(true);
     try {
       const res = await simulateLoanPlan({
-        principalAmount: summary.totalPending + newCash,
+        principalAmount,
+
         annualRate,
         termCount,
         amortizationSystem,
@@ -120,7 +129,7 @@ export function RefinanceModal({ isOpen, onClose, loanId, onSuccess }: Refinance
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl rounded-3xl border-none shadow-2xl p-0 overflow-hidden">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl border-none shadow-2xl p-0">
         <DialogHeader className="bg-slate-900 p-8 text-white relative">
           <div className="absolute top-0 right-0 p-8 opacity-10">
             <RefreshCcw className="w-24 h-24 text-emerald-500 animate-spin-slow" />
@@ -296,16 +305,17 @@ export function RefinanceModal({ isOpen, onClose, loanId, onSuccess }: Refinance
            </Button>
             <Button 
              onClick={handleConfirm}
-             disabled={processing || simulating || !simulation}
+             disabled={processing || simulating || !simulation || (totalToRefinance <= 0)}
              className="bg-slate-900 hover:bg-slate-800 text-white rounded-2xl h-14 px-8 font-black uppercase text-[11px] tracking-widest gap-3 shadow-xl shadow-slate-200 disabled:opacity-50"
             >
              {processing ? (
                <RefreshCcw className="w-4 h-4 animate-spin" />
              ) : (
                <>
-                 Confirmar Refinanciación <ArrowRight className="w-4 h-4" />
+                 {(totalToRefinance <= 0) ? "Capital debe ser > 0" : "Confirmar Refinanciación"} <ArrowRight className="w-4 h-4" />
                </>
              )}
+
            </Button>
         </DialogFooter>
       </DialogContent>

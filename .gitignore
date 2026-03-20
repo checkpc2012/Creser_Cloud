@@ -58,4 +58,18 @@ next-env.d.ts
 
 # Isolation: Demo Nube
 /Demo_Nube/
+/prisma/real_data/
+
+
+# Temporary Automation & Audit Artifacts
+
+# Temporary Automation & Audit Artifacts
+/scripts/
+/audit_res.json
+/audit_res.txt
+/*.sql
+/*.csv
+/*.log
+/_backups/
+/backups/
 
